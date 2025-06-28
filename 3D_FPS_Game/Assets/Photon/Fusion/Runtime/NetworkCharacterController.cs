@@ -74,29 +74,45 @@ namespace Fusion {
       }
     }
 
-    public void Move(Vector3 direction) {
+    public void Move(Vector3 direction, Vector2 lookDelta, Transform cameraRoot)
+        {
       var deltaTime    = Runner.DeltaTime;
       var previousPos  = transform.position;
       var moveVelocity = Data.Velocity;
 
       direction = direction.normalized;
 
+    
+     // 회전 처리
+     transform.Rotate(Vector3.up * lookDelta.x); // Yaw (몸체)
+     float pitch = cameraRoot.localEulerAngles.x - lookDelta.y;
+     if (pitch > 180f) pitch -= 360f;
+     pitch = Mathf.Clamp(pitch, -80f, 80f);
+     cameraRoot.localEulerAngles = new Vector3(pitch, 0f, 0f); // Pitch
+
+      //중력처리
       if (Data.Grounded && moveVelocity.y < 0) {
         moveVelocity.y = 0f;
       }
-
       moveVelocity.y += gravity * Runner.DeltaTime;
 
-      var horizontalVel = default(Vector3);
-      horizontalVel.x = moveVelocity.x;
-      horizontalVel.z = moveVelocity.z;
 
-      if (direction == default) {
-        horizontalVel = Vector3.Lerp(horizontalVel, default, braking * deltaTime);
-      } else {
-        horizontalVel      = Vector3.ClampMagnitude(horizontalVel + direction * acceleration * deltaTime, maxSpeed);
-        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), rotationSpeed * Runner.DeltaTime);
-      }
+     //var horizontalVel = default(Vector3);
+     //horizontalVel.x = moveVelocity.x;
+     //horizontalVel.z = moveVelocity.z;
+
+     Vector3 horizontalVel = new Vector3(moveVelocity.x, 0f, moveVelocity.z);
+
+     if (direction == default){
+      horizontalVel = Vector3.Lerp(horizontalVel, default, braking * deltaTime);
+     }
+     else{
+        horizontalVel = Vector3.ClampMagnitude(horizontalVel + direction * acceleration * deltaTime, maxSpeed);
+        //transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), rotationSpeed * Runner.DeltaTime);
+        //FPS는 마우스로만 회전해야 해서 이동간에 회전 막기
+     }
+
+
 
       moveVelocity.x = horizontalVel.x;
       moveVelocity.z = horizontalVel.z;

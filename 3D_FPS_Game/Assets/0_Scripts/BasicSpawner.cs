@@ -3,6 +3,7 @@ using Fusion.Sockets;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 /*
@@ -22,6 +23,15 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 
     private NetworkRunner _runner;
 
+    private bool SpaceButton;
+    private bool AttackButton;
+    private Vector2 lookDir;
+
+    void Update()
+    {
+
+    }
+
     private void OnGUI()
     {
         if (_runner == null)
@@ -39,16 +49,19 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 
     private async void StartGame(GameMode mode)
     {
+        // Create the Fusion runner and let it know that we will be providing user input
         _runner = gameObject.AddComponent<NetworkRunner>();
         _runner.ProvideInput = true;
 
+        // Create the NetworkSceneInfo from the current scene
         var scene = SceneRef.FromIndex(SceneManager.GetActiveScene().buildIndex);
         var sceneInfo = new NetworkSceneInfo();
         if (scene.IsValid)
         {
-            sceneInfo.AddSceneRef(scene,LoadSceneMode.Additive);
+            sceneInfo.AddSceneRef(scene, LoadSceneMode.Additive);
         }
 
+        // Start or join (depends on gamemode) a session with a specific name
         await _runner.StartGame(new StartGameArgs()
         {
             GameMode = mode,
@@ -60,80 +73,69 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
 
     public void OnConnectedToServer(NetworkRunner runner)
     {
-        throw new NotImplementedException();
+        Debug.Log("[서버연결] 성공");
     }
 
     public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason)
     {
-        throw new NotImplementedException();
+        Debug.Log("[서버연결] 실패");
     }
 
     public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token)
     {
-        throw new NotImplementedException();
+ 
     }
 
     public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data)
     {
-        throw new NotImplementedException();
+
     }
 
     public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason)
     {
-        throw new NotImplementedException();
+ 
     }
 
     public void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken)
     {
-        throw new NotImplementedException();
-    }
 
+    }
+ 
     public void OnInput(NetworkRunner runner, NetworkInput input)
     {
         var data = new NetworkInputData();
 
-        if (Input.GetKey(KeyCode.W))
-            data.aimDirection += Vector3.forward;
+        Vector3 move = Vector3.zero;
+        if (Input.GetKey(KeyCode.W)) move.y += 1;
+        if (Input.GetKey(KeyCode.S)) move.y -= 1;
+        if (Input.GetKey(KeyCode.A)) move.x -= 1;
+        if (Input.GetKey(KeyCode.D)) move.x += 1;
+        data.mvDir = move;
 
-        if (Input.GetKey(KeyCode.S))
-            data.aimDirection += Vector3.back;
+        // 마우스 회전
+        if (Mouse.current != null)
+            data.aimDir = Mouse.current.delta.ReadValue();
 
-        if (Input.GetKey(KeyCode.A))
-            data.aimDirection += Vector3.left;
-
-        if (Input.GetKey(KeyCode.D))
-            data.aimDirection += Vector3.right;
+        // 점프
+        if (Input.GetKey(KeyCode.Space))
+            data.buttons.Set(NetworkInputData.BUTTON_JUMP, true);
 
         input.Set(data);
     }
 
-    public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input)
+    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player) //게임 시작 후 조인
     {
-        throw new NotImplementedException();
+        if (runner.IsServer)
+        {
+            // Create a unique position for the player
+            Vector3 spawnPosition = new Vector3(((player.RawEncoded % runner.Config.Simulation.PlayerCount)) * 3, 1, 0);
+            NetworkObject networkPlayerObject = runner.Spawn(_playerPrefab, spawnPosition, Quaternion.identity, player);
+            _spawnedCharacters.Add(player, networkPlayerObject);
+        }
     }
 
-    public void OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player)
+    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) //방 나가기
     {
-        throw new NotImplementedException();
-    }
-
-    public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
-    {
-        int offset = (int)player.RawEncoded % 8;
-        Vector3 spawnPosition = new Vector3(offset * 3, 1, 0);
-
-        NetworkObject networkPlayerObject = runner.Spawn(_playerPrefab, spawnPosition, Quaternion.identity, player);
-        _spawnedCharacters.Add(player, networkPlayerObject);
-    }
-
-    public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
-    {
-        // Find and remove the players avatar
         if (_spawnedCharacters.TryGetValue(player, out NetworkObject networkObject))
         {
             runner.Despawn(networkObject);
@@ -141,38 +143,14 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
         }
     }
 
-    public void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void OnSceneLoadDone(NetworkRunner runner)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void OnSceneLoadStart(NetworkRunner runner)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message)
-    {
-        throw new NotImplementedException();
-    }
+    public void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress){}
+    public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data){}
+    public void OnSceneLoadDone(NetworkRunner runner){}
+    public void OnSceneLoadStart(NetworkRunner runner){}
+    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList){}
+    public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }
+    public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message){}
+    public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
+    public void OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
+    public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
 }
