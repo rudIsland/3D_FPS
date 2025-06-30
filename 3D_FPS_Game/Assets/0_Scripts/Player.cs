@@ -5,7 +5,15 @@ using UnityEngine.Windows;
 
 public class Player : NetworkBehaviour
 {
+    private readonly string MoveParamX = "MoveX";
+    private readonly string MoveParamY = "MoveY";
+
+    private float currentSpeedX = 0f;
+    private float currentSpeedY = 0f;
+    public float smoothTime = 0.1f; //천천히 올릴값
+
     private NetworkCharacterController netCharacterController;
+    private Animator animator;
 
     [SerializeField] private Transform cameraRoot; // MainCamera의 부모
     [SerializeField] private Camera playerCamera;
@@ -33,6 +41,8 @@ public class Player : NetworkBehaviour
     private void Awake()
     {
         netCharacterController = GetComponent<NetworkCharacterController>();
+        animator = GetComponentInChildren<Animator>();
+
     }
 
     public override void FixedUpdateNetwork()
@@ -43,7 +53,7 @@ public class Player : NetworkBehaviour
 
 
  
-    private void MoveAndRotate() //이동과 회전 함수
+    private void MoveAndRotate() //이동과 회전
     {
         if (GetInput(out NetworkInputData data))
         {
@@ -61,6 +71,12 @@ public class Player : NetworkBehaviour
                 );
             if (data.buttons.IsSet(NetworkInputData.BUTTON_JUMP))
                 netCharacterController.Jump();
+
+            //애니메이션 제어
+            currentSpeedX = Mathf.Lerp(currentSpeedX, data.mvDir.x, Runner.DeltaTime / smoothTime);
+            currentSpeedY = Mathf.Lerp(currentSpeedY, data.mvDir.z, Runner.DeltaTime / smoothTime);
+            animator.SetFloat(MoveParamX, currentSpeedX);
+            animator.SetFloat(MoveParamY, currentSpeedY); //앞뒤 이동은 파라미터를 바꿔줘야한다.
         }
     }
 }

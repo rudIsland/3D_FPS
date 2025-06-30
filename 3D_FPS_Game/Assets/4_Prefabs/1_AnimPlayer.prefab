@@ -337,6 +337,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: 1_XBot
       objectReference: {fileID: 0}
+    - target: {fileID: 7450630423534288030, guid: 2e68ef1eb158d9845a7b5a0c128e9245, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 0d25b124a8f392c4bae1187d760568ca, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
