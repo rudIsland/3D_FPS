@@ -74,32 +74,26 @@ namespace Fusion {
       }
     }
 
-    public void Move(Vector3 direction, Vector2 lookDelta, Transform cameraRoot)
-        {
+    public void Move(Vector3 direction, Vector2 lookDir, Transform cameraRoot)
+    {
       var deltaTime    = Runner.DeltaTime;
       var previousPos  = transform.position;
       var moveVelocity = Data.Velocity;
 
-      direction = direction.normalized;
 
-    
      // 회전 처리
-     transform.Rotate(Vector3.up * lookDelta.x); // Yaw (몸체)
-     float pitch = cameraRoot.localEulerAngles.x - lookDelta.y;
-     if (pitch > 180f) pitch -= 360f;
-     pitch = Mathf.Clamp(pitch, -80f, 80f);
-     cameraRoot.localEulerAngles = new Vector3(pitch, 0f, 0f); // Pitch
+     transform.Rotate(Vector3.up * lookDir.x); // Y축 기준 몸통을 회전시키기
+     float pitch = cameraRoot.localEulerAngles.x - lookDir.y; //카메라는 부모가 회전하면 같이 회전되므로 로컬좌표계의 회전값을 받도록함.
+
+     if (pitch > 180f) pitch -= 360f; //오른손 좌표계로 아래로 회전이 양의방향이고 위로 올리면 해당 각도는 360로 나옴. 이를 보정해주기 위함.
+     pitch = Mathf.Clamp(pitch, -80f, 80f); //아래를 바라볼땐 양의정수 80까지만 내려가도록, 위를 볼땐 보정된 각도인 -80까지만 바라보도록
+     cameraRoot.localEulerAngles = new Vector3(pitch, 0f, 0f); //이를 x축 기준으로 회전시킨 각도로 회전값을 설정
 
       //중력처리
       if (Data.Grounded && moveVelocity.y < 0) {
         moveVelocity.y = 0f;
       }
       moveVelocity.y += gravity * Runner.DeltaTime;
-
-
-     //var horizontalVel = default(Vector3);
-     //horizontalVel.x = moveVelocity.x;
-     //horizontalVel.z = moveVelocity.z;
 
      Vector3 horizontalVel = new Vector3(moveVelocity.x, 0f, moveVelocity.z);
 

@@ -106,10 +106,10 @@ public class BasicSpawner : MonoBehaviour, INetworkRunnerCallbacks
         var data = new NetworkInputData();
 
         Vector3 move = Vector3.zero;
-        if (Input.GetKey(KeyCode.W)) move.y += 1;
-        if (Input.GetKey(KeyCode.S)) move.y -= 1;
-        if (Input.GetKey(KeyCode.A)) move.x -= 1;
-        if (Input.GetKey(KeyCode.D)) move.x += 1;
+        if (Input.GetKey(KeyCode.W)) move += Vector3.forward ;
+        if (Input.GetKey(KeyCode.S)) move += Vector3.back;
+        if (Input.GetKey(KeyCode.A)) move += Vector3.left;
+        if (Input.GetKey(KeyCode.D)) move += Vector3.right;
         data.mvDir = move;
 
         // 마우스 회전
